@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ทางเข้า Plesk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#F3F4F6;--bg-top:#FFFFFF;--surface:#FFFFFF;--surface-2:#F8F9FA;
+  --ink:#101A2E;--ink-2:#2B3549;--muted:#667085;--faint:#9AA1AD;--icon:#7C8596;
+  --line:#E4E7EC;--line-2:#EEF0F3;--hover:#F8F9FB;
+  --gold:#A8844B;--gold-2:#E4C88F;--gold-soft:rgba(168,132,75,.12);
+  --navy:#14223D;--btn:#14223D;--btn-ink:#FFFFFF;--sel:rgba(168,132,75,.08);
+  --ok:#1E9E62;--danger:#B42318;
+  --shadow:0 1px 2px rgba(16,26,46,.04),0 14px 34px -20px rgba(16,26,46,.22);
+  --sans:"Manrope","Anuphan","IBM Plex Sans Thai","Noto Sans Thai","Leelawadee UI",Tahoma,system-ui,sans-serif;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B0F19;--bg-top:#111827;--surface:#111723;--surface-2:#0E141F;
+    --ink:#EDF0F5;--ink-2:#C8CEDA;--muted:#98A1B2;--faint:#5E6778;--icon:#7D8698;
+    --line:#1F2735;--line-2:#19202D;--hover:#141B28;
+    --gold:#D2B47C;--gold-2:#E2C893;--gold-soft:rgba(210,180,124,.12);
+    --navy:#1B2539;--btn:#D2B47C;--btn-ink:#0B0F19;--sel:rgba(210,180,124,.07);
+    --ok:#4ADE9A;--danger:#FF8A80;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 18px 40px -22px rgba(0,0,0,.7);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+    --bg:#0B0F19;--bg-top:#111827;--surface:#111723;--surface-2:#0E141F;
+    --ink:#EDF0F5;--ink-2:#C8CEDA;--muted:#98A1B2;--faint:#5E6778;--icon:#7D8698;
+    --line:#1F2735;--line-2:#19202D;--hover:#141B28;
+    --gold:#D2B47C;--gold-2:#E2C893;--gold-soft:rgba(210,180,124,.12);
+    --navy:#1B2539;--btn:#D2B47C;--btn-ink:#0B0F19;--sel:rgba(210,180,124,.07);
+    --ok:#4ADE9A;--danger:#FF8A80;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 18px 40px -22px rgba(0,0,0,.7);
+    color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;background:linear-gradient(180deg,var(--bg-top) 0,var(--bg) 360px) top/100% 360px no-repeat,var(--bg);scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;min-height:100%;color:var(--ink);font:400 16px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+button,input,textarea{font:inherit;color:inherit}
+.vh{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.wrap{max-width:880px;margin:0 auto;padding:44px 24px 96px}
+
+/* header */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:26px}
+.top h1{margin:0;font-size:30px;line-height:1.2;font-weight:600;letter-spacing:-.02em}
+.count{display:block;margin-top:4px;font-size:14px;color:var(--muted)}
+.count:empty{display:none}
+.sync{display:inline-flex;align-items:center;gap:8px;padding-bottom:4px;font-size:13px;color:var(--muted);text-align:right}
+.sync::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--faint)}
+.sync[data-s="synced"]::before{background:var(--ok)}
+.sync[data-s="saving"]::before,.sync[data-s="connecting"]::before{background:var(--gold)}
+.sync[data-s="error"]::before{background:var(--danger)}
+
+/* opener: the URL is the input */
+.opener{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:18px 24px;padding:26px 28px 18px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.url{display:flex;flex-wrap:wrap;align-items:baseline;row-gap:2px;min-width:0;font-weight:500;font-size:clamp(20px,3.5vw,30px);line-height:1.3;letter-spacing:-.015em;color:var(--muted);cursor:text}
+.url .x{font-size:.6em;letter-spacing:0;color:var(--faint)}
+.url .core{display:inline-flex;align-items:baseline;white-space:nowrap;max-width:100%}
+.url .u{transition:opacity .15s}
+.url.is-search .u{opacity:.3}
+.slot{position:relative;display:inline-block;margin:0 .06em;color:var(--ink);font-weight:700;box-shadow:inset 0 -2px 0 var(--gold);transition:box-shadow .2s}
+.slot:focus-within{box-shadow:inset 0 -3px 0 var(--gold),0 10px 18px -12px var(--gold)}
+.slot .mirror,.slot input{padding:0 .12em;font:inherit;letter-spacing:inherit;line-height:inherit}
+.slot .mirror{display:inline-block;visibility:hidden;white-space:pre;min-width:calc(1.4ch + .24em);max-width:min(15ch,58vw);overflow:hidden;vertical-align:baseline}
+.slot input{position:absolute;inset:0;width:100%;height:100%;margin:0;border:0;background:transparent;outline:none;caret-color:var(--gold)}
+.slot input::placeholder{color:var(--faint);font-weight:500;opacity:1}
+.slot.stamp{animation:settle .45s ease-out}
+@keyframes settle{40%{box-shadow:inset 0 -3px 0 var(--gold),0 0 0 8px var(--gold-soft)}}
+.go{appearance:none;border:0;display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px 22px 14px 24px;border-radius:999px;background:var(--btn);color:var(--btn-ink);font:600 15px/1.2 var(--sans);cursor:pointer;white-space:nowrap;box-shadow:0 12px 24px -14px var(--btn);transition:transform .15s,box-shadow .2s}
+.go:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 16px 28px -14px var(--btn)}
+.go:disabled{background:transparent;color:var(--faint);box-shadow:inset 0 0 0 1px var(--line);cursor:default}
+.go-ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.keys{grid-column:1/-1;margin:0;padding-top:14px;border-top:1px solid var(--line-2);display:flex;flex-wrap:wrap;gap:6px 22px;font-size:12.5px;color:var(--muted)}
+.keys span{white-space:nowrap}
+kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-2);vertical-align:1px}
+
+/* table */
+.table{margin-top:24px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden}
+.thead{display:grid;grid-template-columns:60px minmax(0,1fr) 120px;column-gap:16px;padding:12px 20px;background:var(--surface-2);border-bottom:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--muted)}
+.rack{list-style:none;margin:0;padding:0}
+.unit{position:relative;border-top:1px solid var(--line-2)}
+.unit:first-child{border-top:0}
+.row{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 120px;column-gap:16px;align-items:center;padding:0 20px;transition:background-color .15s}
+.unit:hover .row{background:var(--hover)}
+.unit.is-sel .row{background:var(--sel)}
+.unit.is-sel .row::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--gold)}
+.cell-main{display:grid;grid-template-columns:60px minmax(0,1fr);column-gap:16px;align-items:center;min-width:0;padding:14px 0;color:inherit;text-decoration:none}
+.cell-main:focus-visible{outline-offset:-2px;border-radius:10px}
+.num{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--navy);color:var(--gold-2);font-size:15.5px;font-weight:700;line-height:1;letter-spacing:.01em;font-variant-numeric:tabular-nums;box-shadow:inset 0 0 0 1px rgba(228,200,143,.2)}
+.unit.is-pinned .num{box-shadow:inset 0 0 0 1px rgba(228,200,143,.2),0 0 0 2px var(--surface),0 0 0 3.5px var(--gold)}
+.link{display:flex;align-items:center;gap:8px;min-width:0;font-size:15px;font-variant-numeric:tabular-nums}
+.host-id{font-weight:600;color:var(--ink)}
+.host-rest{color:var(--muted);transition:color .15s}
+.link-text{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ext{flex:none;display:grid;color:var(--gold);opacity:0;transform:translate(-3px,3px);transition:opacity .15s,transform .15s}
+.ext svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.unit:hover .host-rest,.cell-main:focus-visible .host-rest{color:var(--ink-2)}
+.unit:hover .ext,.cell-main:focus-visible .ext{opacity:1;transform:none}
+.unit-actions{display:flex;justify-content:flex-end;gap:4px}
+.ic{appearance:none;border:0;background:transparent;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--icon);cursor:pointer;transition:background-color .15s,color .15s}
+.ic:hover{background:var(--line-2);color:var(--ink)}
+.ic.del:hover{background:color-mix(in srgb,var(--danger) 11%,transparent);color:var(--danger)}
+.ic svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.ic.pin[aria-pressed="true"]{color:var(--gold)}
+.ic.pin[aria-pressed="true"] svg{fill:var(--gold)}
+.unit.launch .row{animation:lit .9s ease-out}
+@keyframes lit{from{background:var(--gold-soft)}to{background:transparent}}
+.unit.eject{pointer-events:none}
+.unit.eject .row{opacity:0;transform:translateX(14px);transition:opacity .22s ease-in,transform .22s ease-in}
+
+.btn{appearance:none;border:1px solid var(--line);border-radius:999px;padding:9px 18px;background:var(--surface);color:var(--ink);font-size:14px;font-weight:600;line-height:1.2;cursor:pointer;transition:border-color .15s,opacity .15s}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--btn);border-color:var(--btn);color:var(--btn-ink)}
+.btn.primary:hover{opacity:.92}
+.empty{list-style:none;padding:36px 24px;text-align:center;color:var(--muted);font-size:15px;line-height:1.6}
+.empty b{display:block;margin-bottom:2px;color:var(--ink);font-weight:600}
+
+/* settings */
+.settings{margin-top:22px}
+.settings summary{display:inline-flex;align-items:center;gap:8px;padding:6px 2px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;list-style:none}
+.settings summary::-webkit-details-marker{display:none}
+.settings summary::before{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);transition:transform .2s}
+.settings[open] summary::before{transform:rotate(45deg) translate(-1px,-1px)}
+.settings summary:hover{color:var(--ink)}
+.set-body{margin-top:10px;padding:20px 22px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
+.set-row{display:grid;gap:8px}
+.set-row>label{font-size:14px;font-weight:600}
+.tpl-row{display:flex;gap:8px;flex-wrap:wrap}
+.tpl-row input{flex:1 1 320px;min-width:0;padding:10px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);font-size:14px}
+.tpl-row input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+.hint{margin:0;font-size:13px;color:var(--muted)}
+.err{margin:0;font-size:13px;color:var(--danger)}
+
+/* toast */
+.toasts{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;padding:0 16px calc(20px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:16px;max-width:100%;padding:11px 14px 11px 20px;border-radius:999px;background:var(--navy);color:#FFFFFF;font-size:14px;font-weight:500;line-height:1.4;box-shadow:0 18px 40px -18px rgba(0,0,0,.5);opacity:0;transform:translateY(10px);transition:opacity .18s,transform .18s}
+.toast.show{opacity:1;transform:none}
+.toast button{appearance:none;border:0;background:transparent;color:var(--gold-2);font-weight:700;padding:4px 6px;cursor:pointer;white-space:nowrap}
+.toast button:hover{text-decoration:underline;text-underline-offset:3px}
+
+@media (max-width:640px){
+  .wrap{padding:26px 16px 96px}
+  .top{margin-bottom:20px}
+  .top h1{font-size:24px}
+  .opener{grid-template-columns:1fr;gap:16px;padding:20px;border-radius:18px}
+  .url .x.scheme{display:none}
+  .go{width:100%}
+  .keys,.thead,.ic.copy,.ext{display:none}
+  .link{font-size:14.5px}
+  .table{border-radius:18px}
+  .row{grid-template-columns:minmax(0,1fr) auto;column-gap:8px;padding:0 10px 0 14px}
+  .cell-main{grid-template-columns:44px minmax(0,1fr);column-gap:14px;padding:12px 0}
+  .unit-actions{gap:0}
+  .ic{width:34px;height:34px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>ทางเข้า Plesk</h1>
+      <span class="count" id="count"></span>
+    </div>
+    <span class="sync" id="sync" data-s="local">เก็บในเบราว์เซอร์นี้</span>
+  </header>
+
+  <section class="opener" aria-label="เปิด server">
+    <label class="vh" for="q">เลข server</label>
+    <div class="url" id="url">
+      <span class="x scheme u" id="uScheme">https://</span>
+      <span class="core"><span class="u" id="uPre">thsv</span><span class="slot" id="slot"><span class="mirror" id="mirror" aria-hidden="true">เลข</span><input id="q" type="text" placeholder="เลข" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" size="1"></span><span class="u" id="uHost">.hostatom.com</span></span>
+      <span class="x tail u" id="uTail">:8443</span>
+    </div>
+    <button class="go" id="go" type="button" disabled><span id="goText">เปิด</span><svg class="go-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5"/><path d="M19 5l-8.5 8.5"/><path d="M17 13.5V18a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 5 18V9a1.5 1.5 0 0 1 1.5-1.5H11"/></svg></button>
+    <p class="keys">
+      <span><kbd>Enter</kbd> เปิดแท็บใหม่</span>
+      <span><kbd>Shift</kbd> + <kbd>Enter</kbd> เพิ่มเข้ารายการ</span>
+      <span><kbd>↑</kbd> <kbd>↓</kbd> เลือก</span>
+      <span><kbd>Esc</kbd> ล้าง</span>
+    </p>
+  </section>
+
+  <section class="table" aria-label="รายการ server">
+    <div class="thead" aria-hidden="true"><span>เลข</span><span>ลิงก์</span><span></span></div>
+    <ul class="rack" id="rack" role="list"></ul>
+  </section>
+
+  <details class="settings">
+    <summary>ตั้งค่า</summary>
+    <div class="set-body">
+      <div class="set-row">
+        <label for="tpl">รูปแบบลิงก์</label>
+        <div class="tpl-row">
+          <input id="tpl" type="text" spellcheck="false" autocomplete="off">
+          <button class="btn primary" id="tplSave" type="button">บันทึก</button>
+          <button class="btn" id="tplReset" type="button">ค่าเริ่มต้น</button>
+        </div>
+        <p class="hint">ใส่ {n} ตรงตำแหน่งเลข server</p>
+        <p class="err" id="tplErr" hidden></p>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div class="vh" id="live" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  const DEFAULT_TPL = 'https://thsv{n}.hostatom.com:8443';
+  const LS_KEY = 'plesk-launcher:v1';
+  const $ = (s) => document.querySelector(s);
+
+  const els = {
+    url: $('#url'), slot: $('#slot'), mirror: $('#mirror'), q: $('#q'), go: $('#go'), goText: $('#goText'),
+    scheme: $('#uScheme'), pre: $('#uPre'), host: $('#uHost'), tail: $('#uTail'),
+    rack: $('#rack'), count: $('#count'), sync: $('#sync'),
+    tpl: $('#tpl'), tplSave: $('#tplSave'), tplReset: $('#tplReset'), tplErr: $('#tplErr'),
+    toasts: $('#toasts'), live: $('#live')
+  };
+
+  const ICON = {
+    pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.6L12 16.5l-5.1 2.7 1-5.6-4.1-4 5.7-.8z"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 5.5V5A1.5 1.5 0 0 0 14 3.5H6A1.5 1.5 0 0 0 4.5 5v8A1.5 1.5 0 0 0 6 14.5h.5"/></svg>',
+    del: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15"/><path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7"/><path d="M6.5 7l.8 11.3A1.8 1.8 0 0 0 9.1 20h5.8a1.8 1.8 0 0 0 1.8-1.7L17.5 7"/><path d="M10.2 10.8v5.4M13.8 10.8v5.4"/></svg>',
+    ext: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5"/><path d="M19 5l-8.5 8.5"/><path d="M17 13.5V18a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 5 18V9a1.5 1.5 0 0 1 1.5-1.5H11"/></svg>'
+  };
+
+  /* ---------- state ---------- */
+  const num = (v) => (typeof v === 'number' && isFinite(v) && v >= 0 ? v : 0);
+  const validTpl = (t) => typeof t === 'string' && t.length <= 300 && /^https?:\/\/\S*\{n\}\S*$/i.test(t);
+  const emptyState = () => ({ v: 1, template: DEFAULT_TPL, updatedAt: 0, servers: {} });
+  const blankServer = () => ({ pinned: false });
+  const SEED = ['31', '47', '49', '92', '93', '95'];
+  const initialState = () => { const s = emptyState(); SEED.forEach((n) => { s.servers[n] = blankServer(); }); return s; };
+
+  function normalize(raw) {
+    const out = emptyState();
+    if (!raw || typeof raw !== 'object') return out;
+    if (validTpl(raw.template)) out.template = raw.template;
+    out.updatedAt = num(raw.updatedAt);
+    const sv = raw.servers && typeof raw.servers === 'object' ? raw.servers : {};
+    Object.keys(sv).forEach((k) => {
+      const v = sv[k];
+      if (!/^\d{1,5}$/.test(k) || !v || typeof v !== 'object') return;
+      out.servers[k] = { pinned: v.pinned === true };
+    });
+    return out;
+  }
+  const OLD_KEYS = ['count', 'last', 'score', 'scoreAt', 'added', 'label', 'notes']; // fields no longer kept
+  const hasOldFields = (raw) => !!(raw && raw.servers && typeof raw.servers === 'object') &&
+    Object.keys(raw.servers).some((k) => { const v = raw.servers[k]; return !!v && typeof v === 'object' && OLD_KEYS.some((f) => f in v); });
+  function loadLocal() {
+    try { const s = localStorage.getItem(LS_KEY); return s ? normalize(JSON.parse(s)) : null; } catch (e) { return null; }
+  }
+  function saveLocal() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
+  }
+
+  const stored = loadLocal();
+  let state = stored || initialState();
+  if (stored) saveLocal(); // rewrite without old fields
+  const ui = { query: '', sel: null, list: [] };
+  let parts = { scheme: '', preHost: '', hostRest: '', tail: '' };
+  let numRe = null;
+
+  /* ---------- template & parsing ---------- */
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  function tplParts(t) {
+    const i = t.indexOf('{n}');
+    const pm = t.slice(0, i).match(/^(https?:\/\/)?([\s\S]*)$/i);
+    const sm = t.slice(i + 3).match(/^([^:/?#]*)([\s\S]*)$/);
+    return { scheme: pm[1] || '', preHost: pm[2] || '', hostRest: sm[1] || '', tail: sm[2] || '' };
+  }
+  function applyTemplate() {
+    parts = tplParts(state.template);
+    els.scheme.textContent = parts.scheme;
+    els.pre.textContent = parts.preHost;
+    els.host.textContent = parts.hostRest;
+    els.tail.textContent = parts.tail;
+    numRe = new RegExp('^(?:https?://)?(?:' + esc(parts.preHost) + ')?(\\d{1,5})(?:' + esc(parts.hostRest) + ')?(?::\\d+)?(?:[/?#]\\S*)?$', 'i');
+    if (document.activeElement !== els.tpl) els.tpl.value = state.template;
+  }
+  const buildUrl = (n) => state.template.split('{n}').join(n);
+  const shortName = (n) => (parts.preHost ? parts.preHost + n : 'server ' + n);
+  const hostName = (n) => parts.preHost + n + parts.hostRest;
+
+  // forgot to switch keyboard layout? Thai number-row keys (and ๐-๙) still read as digits
+  const TH_KEYS = { 'ๅ': '1', '/': '2', '-': '3', 'ภ': '4', 'ถ': '5', 'ุ': '6', 'ึ': '7', 'ค': '8', 'ต': '9', 'จ': '0' };
+  function thaiToDigits(s) {
+    if (!/^[ๅ\/\-ภถุึคตจ๐-๙]+$/.test(s)) return null;
+    return s.replace(/[ๅ\/\-ภถุึคตจ]/g, (c) => TH_KEYS[c]).replace(/[๐-๙]/g, (c) => String(c.charCodeAt(0) - 0x0E50));
+  }
+  function parseNum(raw) {
+    const s = String(raw || '').trim();
+    if (/^\d{1,5}$/.test(s)) return s;
+    const th = thaiToDigits(s);
+    if (th && th.length <= 5) return th;
+    const m = numRe && s.match(numRe);
+    return m ? m[1] : null;
+  }
+
+  /* ---------- list ---------- */
+  function computeList() {
+    const raw = ui.query.trim();
+    const qn = parseNum(raw);
+    const ql = raw.toLowerCase();
+    let arr = Object.keys(state.servers).map((n) => ({ n, s: state.servers[n] }));
+    let rank = null;
+    if (raw && qn) {
+      arr = arr.filter((x) => x.n.includes(qn));
+      rank = (x) => (x.n === qn ? 0 : x.n.startsWith(qn) ? 1 : 2);
+    } else if (raw) {
+      arr = arr.filter((x) => hostName(x.n).toLowerCase().includes(ql));
+    }
+    const byNum = (a, b) => (parseInt(a.n, 10) - parseInt(b.n, 10)) || a.n.localeCompare(b.n);
+    arr.sort((a, b) => (rank ? rank(a) - rank(b) : 0) || ((b.s.pinned ? 1 : 0) - (a.s.pinned ? 1 : 0)) || byNum(a, b));
+    return arr;
+  }
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function iconBtn(act, label, o) {
+    const b = el('button', 'ic ' + act);
+    b.type = 'button';
+    b.dataset.act = act;
+    b.setAttribute('aria-label', label);
+    b.title = label;
+    if (o && 'pressed' in o) b.setAttribute('aria-pressed', String(!!o.pressed));
+    if (o && 'expanded' in o) { b.setAttribute('aria-expanded', String(!!o.expanded)); b.setAttribute('aria-controls', o.controls); }
+    b.innerHTML = ICON[act];
+    return b;
+  }
+  function textBtn(label, cls, act) {
+    const b = el('button', cls, label);
+    b.type = 'button';
+    b.dataset.act = act;
+    return b;
+  }
+
+  function iconSpan(name, cls) {
+    const sp = el('span', cls);
+    sp.setAttribute('aria-hidden', 'true');
+    sp.innerHTML = ICON[name];
+    return sp;
+  }
+  function unitEl(x) {
+    const n = x.n, s = x.s;
+    const li = el('li', 'unit' + (s.pinned ? ' is-pinned' : ''));
+    li.id = 'u-' + n;
+    li.dataset.n = n;
+
+    const a = el('a', 'cell-main');
+    a.href = buildUrl(n);
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.dataset.open = n;
+    a.setAttribute('aria-label', 'เปิด ' + shortName(n));
+    const text = el('span', 'link-text');
+    text.append(el('span', 'host-id', parts.preHost + n), el('span', 'host-rest', parts.hostRest + parts.tail));
+    const link = el('span', 'link');
+    link.append(text, iconSpan('ext', 'ext'));
+    a.append(el('span', 'num', n), link);
+
+    const act = el('div', 'unit-actions');
+    act.append(
+      iconBtn('pin', s.pinned ? 'เลิกปักหมุด' : 'ปักหมุดไว้บนสุด', { pressed: s.pinned }),
+      iconBtn('copy', 'คัดลอกลิงก์'),
+      iconBtn('del', 'ลบออกจากรายการ')
+    );
+    const row = el('div', 'row');
+    row.append(a, act);
+    li.appendChild(row);
+    return li;
+  }
+
+
+  function emptyEl(title, body) {
+    const li = el('li', 'empty');
+    li.append(el('b', '', title), document.createTextNode(body));
+    return li;
+  }
+
+  function captureFocus() {
+    const a = document.activeElement;
+    if (!a || !els.rack.contains(a)) return null;
+    const li = a.closest('.unit');
+    if (!li) return null;
+    return {
+      n: li.dataset.n, field: a.dataset.field || null, act: a.dataset.act || null,
+      open: a.hasAttribute('data-open'), ss: a.selectionStart, se: a.selectionEnd
+    };
+  }
+  function restoreFocus(f) {
+    if (!f) return;
+    const li = document.getElementById('u-' + f.n);
+    if (!li) return;
+    let t = null;
+    if (f.field) t = li.querySelector('[data-field="' + f.field + '"]');
+    else if (f.act) t = li.querySelector('[data-act="' + f.act + '"]');
+    else if (f.open) t = li.querySelector('[data-open]');
+    if (!t) return;
+    t.focus({ preventScroll: true });
+    if (f.field && typeof f.ss === 'number') { try { t.setSelectionRange(f.ss, f.se); } catch (e) { /* ignore */ } }
+  }
+
+  function renderList() {
+    const focus = captureFocus();
+    ui.list = computeList();
+    const total = Object.keys(state.servers).length;
+    const raw = ui.query.trim();
+    const frag = document.createDocumentFragment();
+    if (!total) {
+      frag.appendChild(emptyEl('ยังไม่มี server ในรายการ', 'พิมพ์เลข server ในช่องสีเหลืองแล้วกด Enter หน้านี้จะเปิดให้และจำไว้ในรายการ'));
+    } else if (!ui.list.length) {
+      const qn = parseNum(raw);
+      frag.appendChild(qn
+        ? emptyEl(shortName(qn) + ' ยังไม่อยู่ในรายการ', 'กด Enter เพื่อเปิดและเพิ่มเข้ารายการ หรือ Shift + Enter เพื่อเพิ่มอย่างเดียว')
+        : emptyEl('ไม่มี server ที่ตรงกับ “' + raw + '”', 'พิมพ์เลข server เช่น 95 แล้วกด Enter'));
+    } else {
+      ui.list.forEach((x, i) => { const li = unitEl(x); li.style.setProperty('--i', String(i)); frag.appendChild(li); });
+    }
+    els.rack.replaceChildren(frag);
+    els.count.textContent = !total ? '' : raw ? ui.list.length + ' จาก ' + total + ' เครื่อง' : total + ' เครื่อง';
+    highlightSel();
+    updateGo();
+    restoreFocus(focus);
+  }
+
+  function effectiveSel() {
+    if (ui.sel && ui.list.some((x) => x.n === ui.sel)) return ui.sel;
+    const raw = ui.query.trim();
+    if (raw && !parseNum(raw) && ui.list.length) return ui.list[0].n; // text search: top match
+    return null;
+  }
+  function target() { return effectiveSel() || parseNum(ui.query); }
+  function highlightSel() {
+    const qn = parseNum(ui.query);
+    const n = effectiveSel() || (qn && state.servers[qn] ? qn : null);
+    els.rack.querySelectorAll('.unit.is-sel').forEach((x) => x.classList.remove('is-sel'));
+    if (n) { const li = document.getElementById('u-' + n); if (li) li.classList.add('is-sel'); }
+  }
+  function updateGo() {
+    const t = target();
+    els.go.disabled = !t;
+    els.goText.textContent = t ? 'เปิด ' + shortName(t) : (ui.query.trim() ? 'ไม่พบ server' : 'เปิด');
+  }
+  function moveSel(dir) {
+    const L = ui.list;
+    if (!L.length) return;
+    let i = L.findIndex((x) => x.n === effectiveSel());
+    i = i < 0 ? (dir > 0 ? 0 : L.length - 1) : (i + dir + L.length) % L.length;
+    ui.sel = L[i].n;
+    highlightSel();
+    updateGo();
+    const li = document.getElementById('u-' + ui.sel);
+    if (li) li.scrollIntoView({ block: 'nearest' });
+    els.live.textContent = 'เลือก ' + shortName(ui.sel);
+  }
+
+  function syncSlot() {
+    const v = els.q.value;
+    els.mirror.textContent = v || els.q.placeholder;
+    const t = v.trim();
+    els.url.classList.toggle('is-search', !!t && !/^\d+$/.test(t));
+  }
+
+  /* ---------- actions ---------- */
+  function commit() {
+    state.updatedAt = Date.now();
+    saveLocal();
+    renderList();
+    scheduleWrite();
+  }
+  function openTab(url) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  function stamp() {
+    els.slot.classList.remove('stamp');
+    els.go.classList.remove('fire');
+    void els.slot.offsetWidth;
+    els.slot.classList.add('stamp');
+    els.go.classList.add('fire');
+  }
+  function flash(n) {
+    const li = document.getElementById('u-' + n);
+    if (!li) return;
+    li.classList.remove('launch');
+    void li.offsetWidth;
+    li.classList.add('launch');
+    clearTimeout(li._t);
+    li._t = setTimeout(() => li.classList.remove('launch'), 900);
+  }
+  function clearQuery() {
+    els.q.value = '';
+    ui.query = '';
+    ui.sel = null;
+    syncSlot();
+  }
+  function openFromInput() {
+    const n = target();
+    if (!n) {
+      if (ui.query.trim()) toast('ไม่พบ server ที่ตรงกับ “' + ui.query.trim() + '”');
+      else els.q.focus();
+      return;
+    }
+    openTab(buildUrl(n));
+    stamp();
+    clearQuery();
+    if (state.servers[n]) { renderList(); flash(n); return; }
+    state.servers[n] = blankServer();
+    commit();
+    flash(n);
+    toast('เพิ่ม ' + shortName(n) + ' เข้ารายการแล้ว');
+  }
+  function addFromInput() {
+    const n = parseNum(ui.query);
+    if (!n) { toast(ui.query.trim() ? 'พิมพ์เป็นเลข server เพื่อเพิ่มเข้ารายการ' : 'พิมพ์เลข server ก่อน'); return; }
+    clearQuery();
+    if (state.servers[n]) { renderList(); toast(shortName(n) + ' อยู่ในรายการแล้ว'); return; }
+    state.servers[n] = blankServer();
+    commit();
+    toast('เพิ่ม ' + shortName(n) + ' เข้ารายการแล้ว');
+  }
+  function togglePin(n) {
+    const s = state.servers[n];
+    if (!s) return;
+    s.pinned = !s.pinned;
+    commit();
+    els.live.textContent = (s.pinned ? 'ปักหมุด ' : 'เลิกปักหมุด ') + shortName(n);
+  }
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+    } catch (e) { /* fall through */ }
+    try {
+      const ta = el('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch (e) { return false; }
+  }
+  function copyLink(n) {
+    copyText(buildUrl(n)).then((ok) => toast(ok ? 'คัดลอกลิงก์ ' + shortName(n) + ' แล้ว' : 'คัดลอกไม่สำเร็จ: เบราว์เซอร์ไม่อนุญาตในหน้านี้'));
+  }
+  function focusIn(n, sel) {
+    const li = document.getElementById('u-' + n);
+    const t = li && li.querySelector(sel);
+    if (t) t.focus({ preventScroll: true });
+  }
+  function ejectServer(n) {
+    const li = document.getElementById('u-' + n);
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!li || reduce) { removeServer(n); return; }
+    li.classList.add('eject');
+    setTimeout(() => removeServer(n), 230);
+  }
+  function removeServer(n) {
+    const backup = state.servers[n];
+    if (!backup) return;
+    const idx = ui.list.findIndex((x) => x.n === n);
+    const hadFocus = els.rack.contains(document.activeElement);
+    delete state.servers[n];
+    if (ui.sel === n) ui.sel = null;
+    commit();
+    if (hadFocus) { const next = ui.list[Math.min(idx, ui.list.length - 1)]; if (next) focusIn(next.n, '[data-act="del"]'); }
+    toast('ลบ ' + shortName(n) + ' ออกจากรายการแล้ว', {
+      action: 'เลิกทำ',
+      onAction: () => { state.servers[n] = backup; commit(); }
+    });
+  }
+
+  let toastTimer = 0;
+  function toast(msg, opt) {
+    clearTimeout(toastTimer);
+    const t = el('div', 'toast');
+    t.appendChild(el('span', '', msg));
+    const hide = () => { t.classList.remove('show'); setTimeout(() => t.remove(), 220); };
+    if (opt && opt.action) {
+      const b = el('button', '', opt.action);
+      b.type = 'button';
+      b.addEventListener('click', () => { clearTimeout(toastTimer); hide(); opt.onAction(); });
+      t.appendChild(b);
+    }
+    els.toasts.replaceChildren(t);
+    requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+    toastTimer = setTimeout(hide, opt && opt.action ? 6000 : 2400);
+  }
+
+  /* ---------- events ---------- */
+  els.q.addEventListener('input', () => {
+    els.rack.classList.remove('boot');
+    ui.query = els.q.value;
+    ui.sel = null;
+    syncSlot();
+    renderList();
+  });
+  els.q.addEventListener('paste', (e) => {
+    const text = ((e.clipboardData && e.clipboardData.getData('text')) || '').trim();
+    const d = parseNum(text);
+    if (d && d !== text) { // pasted a full URL / hostname: keep only the number
+      e.preventDefault();
+      els.q.value = d;
+      els.q.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+  els.q.addEventListener('keydown', (e) => {
+    if (e.isComposing) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (e.shiftKey) addFromInput(); else openFromInput();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      if (els.q.value) { clearQuery(); renderList(); } else els.q.blur();
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      moveSel(e.key === 'ArrowDown' ? 1 : -1);
+    }
+  });
+  els.go.addEventListener('click', openFromInput);
+  els.url.addEventListener('mousedown', (e) => {
+    if (e.target !== els.q) { e.preventDefault(); els.q.focus(); }
+  });
+
+  els.rack.addEventListener('click', (e) => {
+    const a = e.target.closest('a[data-open]');
+    if (a) { flash(a.dataset.open); return; }
+    const b = e.target.closest('button[data-act]');
+    if (!b) return;
+    const li = b.closest('.unit');
+    const n = li && li.dataset.n;
+    if (!n) return;
+    const act = b.dataset.act;
+    if (act === 'pin') togglePin(n);
+    else if (act === 'copy') copyLink(n);
+    else if (act === 'del') ejectServer(n);
+  });
+
+
+  function saveTpl(v, doneMsg) {
+    v = v.trim();
+    if (!validTpl(v)) {
+      els.tplErr.textContent = 'ลิงก์ต้องขึ้นต้นด้วย http:// หรือ https:// และมี {n} อยู่ในลิงก์';
+      els.tplErr.hidden = false;
+      els.tpl.focus();
+      return;
+    }
+    els.tplErr.hidden = true;
+    if (v === state.template) return;
+    state.template = v;
+    applyTemplate();
+    syncSlot();
+    commit();
+    toast(doneMsg || 'บันทึกรูปแบบลิงก์แล้ว');
+  }
+  els.tplSave.addEventListener('click', () => saveTpl(els.tpl.value));
+  els.tpl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveTpl(els.tpl.value); } });
+  els.tplReset.addEventListener('click', () => { els.tpl.value = DEFAULT_TPL; saveTpl(DEFAULT_TPL, 'ใช้ลิงก์ค่าเริ่มต้นแล้ว'); });
+
+  // type anywhere to jump into the yellow slot; "/" focuses it
+  document.addEventListener('keydown', (e) => {
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+    const t = e.target;
+    if (t && t.closest && t.closest('input, textarea, select, [contenteditable="true"]')) return;
+    if (e.key === '/') { e.preventDefault(); els.q.focus(); els.q.select(); return; }
+    if (e.key.length === 1 && e.key !== ' ') {
+      els.q.focus();
+      const L = els.q.value.length;
+      els.q.setSelectionRange(L, L);
+    }
+  });
+
+  window.addEventListener('storage', (e) => {
+    if (e.key !== LS_KEY || !e.newValue) return;
+    const s = loadLocal();
+    if (s && s.updatedAt > state.updatedAt) adopt(s);
+  });
+
+  /* ---------- sync: per-person private doc in the artifact db ---------- */
+  let dbRef = null, unsub = null, writing = false, again = false, writeTimer = 0, resubscribed = false;
+  const FATAL = ['revoked', 'not_granted', 'capability_disabled', 'capability_removed', 'invalid_argument', 'transform_error'];
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const SYNC_TEXT = {
+    local: 'เก็บในเบราว์เซอร์นี้',
+    connecting: 'กำลังเชื่อมต่อ…',
+    synced: 'ซิงก์กับบัญชีแล้ว',
+    saving: 'กำลังบันทึก…',
+    error: 'ซิงก์ไม่ได้ ใช้ข้อมูลในเครื่องไปก่อน'
+  };
+  const SYNC_TIP = {
+    local: 'รายการเก็บในเบราว์เซอร์นี้เท่านั้น',
+    synced: 'รายการเก็บในบัญชี Claude ของคุณ เปิดหน้านี้จากเครื่องไหนก็เห็นรายการเดียวกัน'
+  };
+  function setSync(s) {
+    els.sync.dataset.s = s;
+    els.sync.textContent = SYNC_TEXT[s];
+    els.sync.title = SYNC_TIP[s] || '';
+  }
+  function adopt(remote) {
+    const tplChanged = remote.template !== state.template;
+    state = remote;
+    saveLocal();
+    if (tplChanged) applyTemplate();
+    syncSlot();
+    renderList();
+  }
+  function dbFail(e) {
+    if (FATAL.includes(e && e.code)) {
+      if (unsub) { try { unsub(); } catch (_) { /* ignore */ } unsub = null; }
+      dbRef = null;
+      setSync('local');
+    } else {
+      setSync('error');
+    }
+  }
+  async function pushNow() {
+    if (!dbRef) return;
+    if (writing) { again = true; return; }
+    writing = true;
+    setSync('saving');
+    try {
+      const body = JSON.parse(JSON.stringify(state));
+      if (new Blob([JSON.stringify(body)]).size > 240000) {
+        setSync('error');
+        toast('ข้อมูลใหญ่เกินกว่าจะซิงก์ ลองลดโน้ตลง');
+      } else {
+        await dbRef.set(body);
+        setSync('synced');
+      }
+    } catch (e) {
+      if (e && e.code === 'unavailable') {
+        await sleep(500 + Math.random() * 1000);
+        try {
+          if (dbRef) { await dbRef.set(JSON.parse(JSON.stringify(state))); setSync('synced'); }
+        } catch (e2) { dbFail(e2); }
+      } else {
+        dbFail(e);
+      }
+    } finally {
+      writing = false;
+      if (again) { again = false; pushNow(); }
+    }
+  }
+  function scheduleWrite() {
+    if (!dbRef) return;
+    clearTimeout(writeTimer);
+    writeTimer = setTimeout(pushNow, 450);
+  }
+  function subscribe() {
+    unsub = dbRef.onSnapshot((snap) => {
+      if (!snap.exists) return;
+      const remote = normalize(snap.data());
+      if (remote.updatedAt > state.updatedAt) adopt(remote);
+    }, (err) => {
+      unsub = null;
+      if (err && err.code === 'unavailable' && !resubscribed && dbRef) {
+        resubscribed = true;
+        setSync('error');
+        setTimeout(() => { if (dbRef) subscribe(); }, 4000);
+      } else {
+        dbFail(err);
+      }
+    });
+  }
+  async function connectDb() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') { setSync('local'); return; }
+    setSync('connecting');
+    let db = null, user = null, uid = null;
+    try { [db, user] = await Promise.all([c.use('db'), c.use('user')]); } catch (e) { /* treated as absent */ }
+    if (db && user) { try { uid = await user.id(); } catch (e) { uid = null; } }
+    if (!db || !uid) { setSync('local'); return; }
+    try { dbRef = db.doc('data/users/' + uid + '/launcher'); } catch (e) { setSync('local'); return; }
+    try {
+      const snap = await dbRef.get();
+      if (snap.exists) {
+        const raw = snap.data();
+        const remote = normalize(raw);
+        if (remote.updatedAt >= state.updatedAt) { adopt(remote); if (hasOldFields(raw)) await pushNow(); }
+        else await pushNow();
+      } else if (state.updatedAt) {
+        await pushNow();
+      }
+      if (dbRef && els.sync.dataset.s !== 'error') setSync('synced');
+    } catch (e) {
+      dbFail(e);
+    }
+    if (dbRef) subscribe();
+  }
+
+  /* ---------- init ---------- */
+  applyTemplate();
+  syncSlot();
+  renderList();
+  connectDb();
+  setTimeout(() => els.rack.classList.remove('boot'), 2200);
+  try { els.q.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>
