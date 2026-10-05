@@ -59,7 +59,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var
 .count:empty{display:none}
 .sync{display:inline-flex;align-items:center;gap:8px;padding-bottom:4px;font-size:13px;color:var(--muted);text-align:right}
 .sync::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--faint)}
-.sync[data-s="synced"]::before{background:var(--ok)}
+.sync[data-s="synced"]::before,.sync[data-s="online"]::before{background:var(--ok)}
 .sync[data-s="saving"]::before,.sync[data-s="connecting"]::before{background:var(--gold)}
 .sync[data-s="error"]::before{background:var(--danger)}
 
@@ -175,7 +175,7 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
       <h1>ทางเข้า Plesk</h1>
       <span class="count" id="count"></span>
     </div>
-    <span class="sync" id="sync" data-s="local">เก็บในเบราว์เซอร์นี้</span>
+    <span class="sync" id="sync" data-s="online">ออนไลน์</span>
   </header>
 
   <section class="opener" aria-label="เปิด server">
@@ -710,15 +710,18 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
   let dbRef = null, unsub = null, writing = false, again = false, writeTimer = 0, resubscribed = false;
   const FATAL = ['revoked', 'not_granted', 'capability_disabled', 'capability_removed', 'invalid_argument', 'transform_error'];
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const BASE = location.protocol === 'file:' ? 'offline' : 'online'; // opened from disk vs hosted
   const SYNC_TEXT = {
-    local: 'เก็บในเบราว์เซอร์นี้',
+    online: 'ออนไลน์',
+    offline: 'ออฟไลน์',
     connecting: 'กำลังเชื่อมต่อ…',
     synced: 'ซิงก์กับบัญชีแล้ว',
     saving: 'กำลังบันทึก…',
     error: 'ซิงก์ไม่ได้ ใช้ข้อมูลในเครื่องไปก่อน'
   };
   const SYNC_TIP = {
-    local: 'รายการเก็บในเบราว์เซอร์นี้เท่านั้น',
+    online: 'รายการเก็บในเบราว์เซอร์นี้เท่านั้น',
+    offline: 'เปิดจากไฟล์ในเครื่อง รายการเก็บในเบราว์เซอร์นี้เท่านั้น',
     synced: 'รายการเก็บในบัญชี Claude ของคุณ เปิดหน้านี้จากเครื่องไหนก็เห็นรายการเดียวกัน'
   };
   function setSync(s) {
@@ -738,7 +741,7 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
     if (FATAL.includes(e && e.code)) {
       if (unsub) { try { unsub(); } catch (_) { /* ignore */ } unsub = null; }
       dbRef = null;
-      setSync('local');
+      setSync(BASE);
     } else {
       setSync('error');
     }
@@ -794,13 +797,13 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
   }
   async function connectDb() {
     const c = window.claude;
-    if (!c || typeof c.use !== 'function') { setSync('local'); return; }
+    if (!c || typeof c.use !== 'function') { setSync(BASE); return; }
     setSync('connecting');
     let db = null, user = null, uid = null;
     try { [db, user] = await Promise.all([c.use('db'), c.use('user')]); } catch (e) { /* treated as absent */ }
     if (db && user) { try { uid = await user.id(); } catch (e) { uid = null; } }
-    if (!db || !uid) { setSync('local'); return; }
-    try { dbRef = db.doc('data/users/' + uid + '/launcher'); } catch (e) { setSync('local'); return; }
+    if (!db || !uid) { setSync(BASE); return; }
+    try { dbRef = db.doc('data/users/' + uid + '/launcher'); } catch (e) { setSync(BASE); return; }
     try {
       const snap = await dbRef.get();
       if (snap.exists) {
