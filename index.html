@@ -121,6 +121,15 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
 .unit.eject{pointer-events:none}
 .unit.eject .row{opacity:0;transform:translateX(14px);transition:opacity .22s ease-in,transform .22s ease-in}
 
+.adder{border-top:1px solid var(--line-2);padding:0 20px}
+.add-open{appearance:none;border:0;background:transparent;display:grid;grid-template-columns:60px auto;column-gap:16px;align-items:center;width:100%;padding:14px 0;color:var(--muted);font:600 15px/1.2 var(--sans);text-align:left;cursor:pointer;transition:color .15s}
+.add-open:hover{color:var(--ink)}
+.add-ic{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;border:1.5px dashed var(--faint);color:var(--gold);transition:border-color .15s}
+.add-open:hover .add-ic{border-color:var(--gold)}
+.add-ic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.add-form{display:grid;gap:8px;padding:16px 0 18px}
+.add-form[hidden]{display:none}
+.add-label{font-size:14px;font-weight:600}
 .btn{appearance:none;border:1px solid var(--line);border-radius:999px;padding:9px 18px;background:var(--surface);color:var(--ink);font-size:14px;font-weight:600;line-height:1.2;cursor:pointer;transition:border-color .15s,opacity .15s}
 .btn:hover{border-color:var(--faint)}
 .btn.primary{background:var(--btn);border-color:var(--btn);color:var(--btn-ink)}
@@ -164,6 +173,8 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
   .row{grid-template-columns:minmax(0,1fr) auto;column-gap:8px;padding:0 10px 0 14px}
   .cell-main{grid-template-columns:44px minmax(0,1fr);column-gap:14px;padding:12px 0}
   .unit-actions{gap:0}
+  .adder{padding:0 14px}
+  .add-open{grid-template-columns:44px auto;column-gap:14px;padding:12px 0}
   .ic{width:34px;height:34px}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
@@ -198,6 +209,18 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
   <section class="table" aria-label="รายการ server">
     <div class="thead" aria-hidden="true"><span>เลข</span><span>ลิงก์</span><span></span></div>
     <ul class="rack" id="rack" role="list"></ul>
+    <div class="adder">
+      <button class="add-open" id="addOpen" type="button" aria-expanded="false" aria-controls="addForm"><span class="add-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></span>เพิ่ม server</button>
+      <form class="add-form" id="addForm" hidden>
+        <label class="add-label" for="addIn">เลข server หรือลิงก์เต็ม</label>
+        <div class="tpl-row">
+          <input id="addIn" type="text" placeholder="เช่น 95 หรือ https://asthsrv01.assystem.co.th:8443" spellcheck="false" autocomplete="off" autocapitalize="off" enterkeyhint="done">
+          <button class="btn primary" type="submit">เพิ่ม</button>
+          <button class="btn" id="addCancel" type="button">ยกเลิก</button>
+        </div>
+        <p class="err" id="addErr" hidden></p>
+      </form>
+    </div>
   </section>
 
   <details class="settings">
@@ -249,7 +272,9 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
   const blankServer = (url) => (url ? { pinned: false, url } : { pinned: false });
   const SEED = ['31', '47', '49', '92', '93', '95'];
   // servers outside the template: keyed by hostname, carry their own full url
-  const EXTRA_SEED = { 'asthsrv01.assystem.co.th': 'https://asthsrv01.assystem.co.th:8443/login_up.php' };
+  const EXTRA_SEED = { 'asthsrv01.assystem.co.th': 'https://asthsrv01.assystem.co.th:8443' };
+  // Plesk's root redirects to its login page, so a pasted login link is kept as just the server
+  const stripLogin = (u) => u.replace(/\/login_up\.php$/i, '');
   const initialState = () => {
     const s = emptyState();
     SEED.forEach((n) => { s.servers[n] = blankServer(); });
@@ -270,7 +295,7 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
       const v = sv[k];
       if (!v || typeof v !== 'object') return;
       if (/^\d{1,5}$/.test(k)) out.servers[k] = { pinned: v.pinned === true };
-      else if (validHost(k) && validUrl(v.url)) out.servers[k] = { pinned: v.pinned === true, url: v.url };
+      else if (validHost(k) && validUrl(v.url)) out.servers[k] = { pinned: v.pinned === true, url: stripLogin(v.url) };
     });
     return out;
   }
@@ -328,7 +353,7 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
     if (!isCustom(n)) return [parts.preHost + n, parts.hostRest + parts.tail];
     const id = n.split('.')[0];
     let rest = n.slice(id.length);
-    try { const u = new URL(buildUrl(n)); rest += (u.port ? ':' + u.port : '') + (u.pathname === '/' ? '' : u.pathname); } catch (e) { /* keep host */ }
+    try { const u = new URL(buildUrl(n)); rest += u.port ? ':' + u.port : ''; } catch (e) { /* keep host */ }
     return [id, rest];
   }
   // badge: digits in the first label (asthsrv01 → 01), else first two letters
@@ -345,7 +370,7 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
     let u;
     try { u = new URL(/^https?:\/\//i.test(s) ? s : 'https://' + s); } catch (e) { return null; }
     if (!/^https?:$/.test(u.protocol) || !validHost(u.hostname)) return null;
-    const url = u.pathname === '/' && !u.search && !u.hash ? u.origin : u.href;
+    const url = stripLogin(u.pathname === '/' && !u.search && !u.hash ? u.origin : u.href);
     return { key: u.hostname.toLowerCase(), url };
   }
 
@@ -605,15 +630,48 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
     flash(n);
     toast('เพิ่ม ' + shortName(n) + ' เข้ารายการแล้ว');
   }
-  function addFromInput() {
-    const n = inputKey();
-    if (!n) { toast(ui.query.trim() ? 'พิมพ์เลข server หรือวางลิงก์เต็มเพื่อเพิ่มเข้ารายการ' : 'พิมพ์เลข server ก่อน'); return; }
-    if (state.servers[n]) { clearQuery(); renderList(); toast(shortName(n) + ' อยู่ในรายการแล้ว'); return; }
-    if (!rememberCustom(n)) state.servers[n] = blankServer();
-    clearQuery();
+  // add a number or full link; returns an error message, or '' when done
+  function addServer(raw) {
+    const qn = parseNum(raw);
+    const qc = qn ? null : parseCustom(raw);
+    const n = qn || (qc && qc.key);
+    if (!n) return String(raw || '').trim() ? 'พิมพ์เลข server หรือวางลิงก์เต็ม เช่น https://asthsrv01.assystem.co.th:8443' : 'พิมพ์เลข server หรือลิงก์ก่อน';
+    if (state.servers[n]) { renderList(); flash(n); toast(shortName(n) + ' อยู่ในรายการแล้ว'); return ''; }
+    state.servers[n] = blankServer(qc ? qc.url : undefined);
     commit();
+    flash(n);
     toast('เพิ่ม ' + shortName(n) + ' เข้ารายการแล้ว');
+    return '';
   }
+  function addFromInput() {
+    const raw = ui.query;
+    const err = addServer(raw);
+    if (err) { toast(err); return; }
+    clearQuery();
+    renderList();
+  }
+
+  /* add form under the list */
+  const addEls = { open: $('#addOpen'), form: $('#addForm'), input: $('#addIn'), cancel: $('#addCancel'), err: $('#addErr') };
+  function showAdd(on) {
+    addEls.form.hidden = !on;
+    addEls.open.hidden = on;
+    addEls.open.setAttribute('aria-expanded', String(on));
+    addEls.err.hidden = true;
+    if (on) addEls.input.focus(); else { addEls.input.value = ''; addEls.open.focus(); }
+  }
+  addEls.open.addEventListener('click', () => showAdd(true));
+  addEls.cancel.addEventListener('click', () => showAdd(false));
+  addEls.input.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); showAdd(false); } });
+  addEls.input.addEventListener('input', () => { addEls.err.hidden = true; });
+  addEls.form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const err = addServer(addEls.input.value);
+    if (err) { addEls.err.textContent = err; addEls.err.hidden = false; addEls.input.focus(); return; }
+    addEls.err.hidden = true;
+    addEls.input.value = '';
+    addEls.input.focus(); // stay open to add several in a row
+  });
   function togglePin(n) {
     const s = state.servers[n];
     if (!s) return;
