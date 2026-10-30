@@ -246,9 +246,19 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
   const num = (v) => (typeof v === 'number' && isFinite(v) && v >= 0 ? v : 0);
   const validTpl = (t) => typeof t === 'string' && t.length <= 300 && /^https?:\/\/\S*\{n\}\S*$/i.test(t);
   const emptyState = () => ({ v: 1, template: DEFAULT_TPL, updatedAt: 0, servers: {} });
-  const blankServer = () => ({ pinned: false });
+  const blankServer = (url) => (url ? { pinned: false, url } : { pinned: false });
   const SEED = ['31', '47', '49', '92', '93', '95'];
-  const initialState = () => { const s = emptyState(); SEED.forEach((n) => { s.servers[n] = blankServer(); }); return s; };
+  // servers outside the template: keyed by hostname, carry their own full url
+  const EXTRA_SEED = { 'asthsrv01.assystem.co.th': 'https://asthsrv01.assystem.co.th:8443/login_up.php' };
+  const initialState = () => {
+    const s = emptyState();
+    SEED.forEach((n) => { s.servers[n] = blankServer(); });
+    Object.keys(EXTRA_SEED).forEach((k) => { s.servers[k] = blankServer(EXTRA_SEED[k]); });
+    return s;
+  };
+  const isCustom = (n) => !/^\d+$/.test(n);
+  const validHost = (h) => typeof h === 'string' && h.length <= 253 && /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(h);
+  const validUrl = (u) => { try { return typeof u === 'string' && u.length <= 500 && /^https?:$/.test(new URL(u).protocol); } catch (e) { return false; } };
 
   function normalize(raw) {
     const out = emptyState();
@@ -258,8 +268,9 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
     const sv = raw.servers && typeof raw.servers === 'object' ? raw.servers : {};
     Object.keys(sv).forEach((k) => {
       const v = sv[k];
-      if (!/^\d{1,5}$/.test(k) || !v || typeof v !== 'object') return;
-      out.servers[k] = { pinned: v.pinned === true };
+      if (!v || typeof v !== 'object') return;
+      if (/^\d{1,5}$/.test(k)) out.servers[k] = { pinned: v.pinned === true };
+      else if (validHost(k) && validUrl(v.url)) out.servers[k] = { pinned: v.pinned === true, url: v.url };
     });
     return out;
   }
@@ -276,6 +287,18 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
   const stored = loadLocal();
   let state = stored || initialState();
   if (stored) saveLocal(); // rewrite without old fields
+  // one-time: give existing lists the servers added after they were created
+  try {
+    const SEEN_KEY = LS_KEY + ':extra-seen';
+    const seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '[]');
+    const fresh = Object.keys(EXTRA_SEED).filter((k) => !seen.includes(k));
+    if (stored && fresh.length) {
+      fresh.forEach((k) => { if (!state.servers[k]) state.servers[k] = blankServer(EXTRA_SEED[k]); });
+      state.updatedAt = Date.now();
+      saveLocal();
+    }
+    localStorage.setItem(SEEN_KEY, JSON.stringify(Object.keys(EXTRA_SEED)));
+  } catch (e) { /* storage unavailable */ }
   const ui = { query: '', sel: null, list: [] };
   let parts = { scheme: '', preHost: '', hostRest: '', tail: '' };
   let numRe = null;
@@ -297,9 +320,34 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
     numRe = new RegExp('^(?:https?://)?(?:' + esc(parts.preHost) + ')?(\\d{1,5})(?:' + esc(parts.hostRest) + ')?(?::\\d+)?(?:[/?#]\\S*)?$', 'i');
     if (document.activeElement !== els.tpl) els.tpl.value = state.template;
   }
-  const buildUrl = (n) => state.template.split('{n}').join(n);
-  const shortName = (n) => (parts.preHost ? parts.preHost + n : 'server ' + n);
-  const hostName = (n) => parts.preHost + n + parts.hostRest;
+  const buildUrl = (n) => (state.servers[n] && state.servers[n].url) || state.template.split('{n}').join(n);
+  const shortName = (n) => (isCustom(n) ? n.split('.')[0] : parts.preHost ? parts.preHost + n : 'server ' + n);
+  const hostName = (n) => (isCustom(n) ? n : parts.preHost + n + parts.hostRest);
+  // row text: bold id + muted rest
+  function linkParts(n) {
+    if (!isCustom(n)) return [parts.preHost + n, parts.hostRest + parts.tail];
+    const id = n.split('.')[0];
+    let rest = n.slice(id.length);
+    try { const u = new URL(buildUrl(n)); rest += (u.port ? ':' + u.port : '') + (u.pathname === '/' ? '' : u.pathname); } catch (e) { /* keep host */ }
+    return [id, rest];
+  }
+  // badge: digits in the first label (asthsrv01 → 01), else first two letters
+  function badge(n) {
+    if (!isCustom(n)) return n;
+    const id = n.split('.')[0];
+    const d = id.match(/\d+$/);
+    return d ? d[0].slice(-3) : id.slice(0, 2).toUpperCase();
+  }
+  // a full link / hostname that is not on the template → { key: hostname, url }
+  function parseCustom(raw) {
+    const s = String(raw || '').trim();
+    if (!s || parseNum(s) || !/\./.test(s) || /\s/.test(s)) return null;
+    let u;
+    try { u = new URL(/^https?:\/\//i.test(s) ? s : 'https://' + s); } catch (e) { return null; }
+    if (!/^https?:$/.test(u.protocol) || !validHost(u.hostname)) return null;
+    const url = u.pathname === '/' && !u.search && !u.hash ? u.origin : u.href;
+    return { key: u.hostname.toLowerCase(), url };
+  }
 
   // forgot to switch keyboard layout? Thai number-row keys (and ๐-๙) still read as digits
   const TH_KEYS = { 'ๅ': '1', '/': '2', '-': '3', 'ภ': '4', 'ถ': '5', 'ุ': '6', 'ึ': '7', 'ค': '8', 'ต': '9', 'จ': '0' };
@@ -322,14 +370,17 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
     const qn = parseNum(raw);
     const ql = raw.toLowerCase();
     let arr = Object.keys(state.servers).map((n) => ({ n, s: state.servers[n] }));
+    const qc = raw && !qn ? parseCustom(raw) : null;
     let rank = null;
     if (raw && qn) {
-      arr = arr.filter((x) => x.n.includes(qn));
+      arr = arr.filter((x) => !isCustom(x.n) && x.n.includes(qn));
       rank = (x) => (x.n === qn ? 0 : x.n.startsWith(qn) ? 1 : 2);
+    } else if (qc && /[/:]/.test(raw)) {
+      arr = arr.filter((x) => x.n === qc.key);
     } else if (raw) {
       arr = arr.filter((x) => hostName(x.n).toLowerCase().includes(ql));
     }
-    const byNum = (a, b) => (parseInt(a.n, 10) - parseInt(b.n, 10)) || a.n.localeCompare(b.n);
+    const byNum = (a, b) => (isCustom(a.n) - isCustom(b.n)) || (isCustom(a.n) ? 0 : parseInt(a.n, 10) - parseInt(b.n, 10)) || a.n.localeCompare(b.n);
     arr.sort((a, b) => (rank ? rank(a) - rank(b) : 0) || ((b.s.pinned ? 1 : 0) - (a.s.pinned ? 1 : 0)) || byNum(a, b));
     return arr;
   }
@@ -377,10 +428,11 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
     a.dataset.open = n;
     a.setAttribute('aria-label', 'เปิด ' + shortName(n));
     const text = el('span', 'link-text');
-    text.append(el('span', 'host-id', parts.preHost + n), el('span', 'host-rest', parts.hostRest + parts.tail));
+    const lp = linkParts(n);
+    text.append(el('span', 'host-id', lp[0]), el('span', 'host-rest', lp[1]));
     const link = el('span', 'link');
     link.append(text, iconSpan('ext', 'ext'));
-    a.append(el('span', 'num', n), link);
+    a.append(el('span', 'num', badge(n)), link);
 
     const act = el('div', 'unit-actions');
     act.append(
@@ -431,12 +483,12 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
     const raw = ui.query.trim();
     const frag = document.createDocumentFragment();
     if (!total) {
-      frag.appendChild(emptyEl('ยังไม่มี server ในรายการ', 'พิมพ์เลข server ในช่องสีเหลืองแล้วกด Enter หน้านี้จะเปิดให้และจำไว้ในรายการ'));
+      frag.appendChild(emptyEl('ยังไม่มี server ในรายการ', 'พิมพ์เลข server หรือวางลิงก์เต็มในช่องสีเหลืองแล้วกด Enter หน้านี้จะเปิดให้และจำไว้ในรายการ'));
     } else if (!ui.list.length) {
-      const qn = parseNum(raw);
-      frag.appendChild(qn
-        ? emptyEl(shortName(qn) + ' ยังไม่อยู่ในรายการ', 'กด Enter เพื่อเปิดและเพิ่มเข้ารายการ หรือ Shift + Enter เพื่อเพิ่มอย่างเดียว')
-        : emptyEl('ไม่มี server ที่ตรงกับ “' + raw + '”', 'พิมพ์เลข server เช่น 95 แล้วกด Enter'));
+      const qk = inputKey();
+      frag.appendChild(qk
+        ? emptyEl(shortName(qk) + ' ยังไม่อยู่ในรายการ', 'กด Enter เพื่อเปิดและเพิ่มเข้ารายการ หรือ Shift + Enter เพื่อเพิ่มอย่างเดียว')
+        : emptyEl('ไม่มี server ที่ตรงกับ “' + raw + '”', 'พิมพ์เลข server เช่น 95 หรือวางลิงก์เต็ม เช่น https://asthsrv01.assystem.co.th:8443 แล้วกด Enter'));
     } else {
       ui.list.forEach((x, i) => { const li = unitEl(x); li.style.setProperty('--i', String(i)); frag.appendChild(li); });
     }
@@ -453,7 +505,20 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
     if (raw && !parseNum(raw) && ui.list.length) return ui.list[0].n; // text search: top match
     return null;
   }
-  function target() { return effectiveSel() || parseNum(ui.query); }
+  // what the typed text names on its own: a template number or a full link's hostname
+  function inputKey() {
+    const qn = parseNum(ui.query);
+    if (qn) return qn;
+    const qc = parseCustom(ui.query);
+    return qc ? qc.key : null;
+  }
+  function target() { return effectiveSel() || inputKey(); }
+  // put a typed full link into the list (no-op for template numbers)
+  function rememberCustom(n) {
+    const qc = parseCustom(ui.query);
+    if (qc && qc.key === n && !state.servers[n]) { state.servers[n] = blankServer(qc.url); return true; }
+    return false;
+  }
   function highlightSel() {
     const qn = parseNum(ui.query);
     const n = effectiveSel() || (qn && state.servers[qn] ? qn : null);
@@ -530,21 +595,22 @@ kbd{display:inline-block;font:600 11px/1 var(--sans);padding:4px 6px 3px;border-
       else els.q.focus();
       return;
     }
+    const added = !state.servers[n];
+    if (added && !rememberCustom(n)) state.servers[n] = blankServer();
     openTab(buildUrl(n));
     stamp();
     clearQuery();
-    if (state.servers[n]) { renderList(); flash(n); return; }
-    state.servers[n] = blankServer();
+    if (!added) { renderList(); flash(n); return; }
     commit();
     flash(n);
     toast('เพิ่ม ' + shortName(n) + ' เข้ารายการแล้ว');
   }
   function addFromInput() {
-    const n = parseNum(ui.query);
-    if (!n) { toast(ui.query.trim() ? 'พิมพ์เป็นเลข server เพื่อเพิ่มเข้ารายการ' : 'พิมพ์เลข server ก่อน'); return; }
+    const n = inputKey();
+    if (!n) { toast(ui.query.trim() ? 'พิมพ์เลข server หรือวางลิงก์เต็มเพื่อเพิ่มเข้ารายการ' : 'พิมพ์เลข server ก่อน'); return; }
+    if (state.servers[n]) { clearQuery(); renderList(); toast(shortName(n) + ' อยู่ในรายการแล้ว'); return; }
+    if (!rememberCustom(n)) state.servers[n] = blankServer();
     clearQuery();
-    if (state.servers[n]) { renderList(); toast(shortName(n) + ' อยู่ในรายการแล้ว'); return; }
-    state.servers[n] = blankServer();
     commit();
     toast('เพิ่ม ' + shortName(n) + ' เข้ารายการแล้ว');
   }
